@@ -1,11 +1,8 @@
-"use client";
+import { auth } from "@clerk/nextjs/server";
 
-import { useState } from "react";
+export const dynamic = "force-dynamic";
 import { format } from "date-fns";
-import { CalendarIcon, Dumbbell } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dumbbell } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -13,6 +10,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { getWorkoutsByUserAndDate } from "@/data/workouts";
+import { DatePicker } from "./_components/DatePicker";
 
 function formatDate(date: Date): string {
   const day = parseInt(format(date, "d"), 10);
@@ -30,43 +29,19 @@ function getOrdinalSuffix(day: number): string {
   }
 }
 
-type Exercise = {
-  name: string;
-  sets: number;
-  reps: number;
-  weight: number;
-};
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ date?: string }>;
+}) {
+  const { userId } = await auth();
+  const { date: dateParam } = await searchParams;
 
-type Workout = {
-  id: number;
-  name: string;
-  exercises: Exercise[];
-};
+  const date = dateParam
+    ? new Date(`${dateParam}T00:00:00`)
+    : new Date();
 
-const MOCK_WORKOUTS: Workout[] = [
-  {
-    id: 1,
-    name: "Push Day",
-    exercises: [
-      { name: "Bench Press", sets: 4, reps: 8, weight: 80 },
-      { name: "Overhead Press", sets: 3, reps: 10, weight: 50 },
-      { name: "Tricep Dips", sets: 3, reps: 12, weight: 0 },
-    ],
-  },
-  {
-    id: 2,
-    name: "Cardio",
-    exercises: [
-      { name: "Treadmill Run", sets: 1, reps: 1, weight: 0 },
-    ],
-  },
-];
-
-export default function DashboardPage() {
-  const [date, setDate] = useState<Date>(new Date());
-  const [open, setOpen] = useState(false);
-
-  const workouts = MOCK_WORKOUTS;
+  const workouts = await getWorkoutsByUserAndDate(userId!, date);
 
   return (
     <div className="flex flex-col flex-1 px-6 py-8 max-w-2xl mx-auto w-full gap-8">
@@ -77,26 +52,7 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button variant="outline" className="w-fit gap-2">
-            <CalendarIcon className="size-4" />
-            {formatDate(date)}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          <Calendar
-            mode="single"
-            selected={date}
-            onSelect={(d) => {
-              if (d) {
-                setDate(d);
-                setOpen(false);
-              }
-            }}
-          />
-        </PopoverContent>
-      </Popover>
+      <DatePicker date={date} />
 
       <div className="flex flex-col gap-4">
         <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
@@ -116,20 +72,19 @@ export default function DashboardPage() {
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">{workout.name}</CardTitle>
                 <CardDescription>
-                  {workout.exercises.length} exercise{workout.exercises.length !== 1 ? "s" : ""}
+                  {workout.workoutExercises.length} exercise{workout.workoutExercises.length !== 1 ? "s" : ""}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <ul className="flex flex-col gap-2">
-                  {workout.exercises.map((exercise) => (
+                  {workout.workoutExercises.map((we) => (
                     <li
-                      key={exercise.name}
+                      key={we.id}
                       className="flex items-center justify-between text-sm"
                     >
-                      <span className="font-medium">{exercise.name}</span>
+                      <span className="font-medium">{we.exercise.name}</span>
                       <span className="text-muted-foreground">
-                        {exercise.sets} × {exercise.reps}
-                        {exercise.weight > 0 ? ` @ ${exercise.weight} kg` : ""}
+                        {we.sets.length} set{we.sets.length !== 1 ? "s" : ""}
                       </span>
                     </li>
                   ))}
