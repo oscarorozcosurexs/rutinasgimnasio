@@ -7,7 +7,11 @@
       "mcp__neon__get_database_tables",
       "mcp__neon__describe_table_schema",
       "mcp__neon__run_sql_transaction",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(npm run *)",
+      "Bash(npx shadcn@latest *)",
+      "Read(//tmp/**)",
+      "Bash(curl *)"
     ]
   },
   "enabledMcpjsonServers": [
